@@ -198,6 +198,7 @@ export interface ConfigParameters {
   folderTrustFeature?: boolean;
   folderTrust?: boolean;
   ideMode?: boolean;
+  enableIdeLanguageModelTools?: boolean;
   loadMemoryFromIncludeDirectories?: boolean;
   chatCompression?: ChatCompressionSettings;
   interactive?: boolean;
@@ -254,6 +255,7 @@ export class Config {
   private readonly folderTrustFeature: boolean;
   private readonly folderTrust: boolean;
   private ideMode: boolean;
+  private readonly enableIdeLanguageModelTools: boolean;
   private ideClient: IdeClient;
   private inFallbackMode = false;
   private readonly maxSessionTurns: number;
@@ -341,6 +343,8 @@ export class Config {
     this.folderTrustFeature = params.folderTrustFeature ?? false;
     this.folderTrust = params.folderTrust ?? false;
     this.ideMode = params.ideMode ?? false;
+    this.enableIdeLanguageModelTools =
+      params.enableIdeLanguageModelTools ?? false;
     this.ideClient = IdeClient.getInstance();
     this.loadMemoryFromIncludeDirectories =
       params.loadMemoryFromIncludeDirectories ?? false;
@@ -377,6 +381,11 @@ export class Config {
       await this.getGitService();
     }
     this.promptRegistry = new PromptRegistry();
+
+    if (this.getIdeMode()) {
+      await this.getIdeClient().connect();
+      logIdeConnection(this, new IdeConnectionEvent(IdeConnectionType.START));
+    }
     this.toolRegistry = await this.createToolRegistry();
     logCliConfiguration(this, new StartSessionEvent(this, this.toolRegistry));
   }
@@ -688,6 +697,10 @@ export class Config {
 
   getIdeMode(): boolean {
     return this.ideMode;
+  }
+
+  getEnableIdeLanguageModelTools(): boolean {
+    return this.enableIdeLanguageModelTools;
   }
 
   getFolderTrustFeature(): boolean {
